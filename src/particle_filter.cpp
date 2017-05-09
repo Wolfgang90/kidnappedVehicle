@@ -98,52 +98,46 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   http://planning.cs.uiuc.edu/node99.html
   
   //Precalculate elements of Multivariate-Gaussian-Probability
-  double denominator = 2 * M_PI * std_landmark[0] std_landmark[1];
-  double exp_den_1 = 2 * pow(std_landmark[0],2)
-  double exp_den_2 = 2 * pow(std_landmark[1],2)
+  double denominator = 2 * M_PI * std_landmark[0] * std_landmark[1];
+  double exp_den_1 = 2 * pow(std_landmark[0],2);
+  double exp_den_2 = 2 * pow(std_landmark[1],2);
 
   for (int i = 0; i < num_particles; i++) {
     Particle particle = particles[i];
+    double weight = 1.0;
     
     //Transform car measurements from local coordinate system to map coordinate system
-    std::vector<LandmarkObs> observations_transformed;
     for (int j = 0; j < observations.size(); j++) {
-      LandmarkObs observation = observations[j]
 
-      LandmarkObs obs_transformed;
-      obs_transformed.id = observation.id;
-      obs_transformed.x = particle.x + (observation.x * cos(particle.theta)) - (observation.y * sin(particle.theta));
-      obs_transformed.y = particle.y + (observation.x * sin(particle.theta)) + (observation.y * cos(particle.theta));
-      observations_transformed.push_back(obs_transformed);
-    }
-
-    //Associate each measurement with the closest landmark identifier
-    for (int j = 0; j < observations_transformed.size(); j++){
-      LandmarkObs obs = observations_transformed[j]; 
+      // Untransformed observation
+      LandmarkObs observation = observations[j];
+      
+      // Define variable for transformed observation
+      LandmarkObs obs;
+      obs.id = observation.id;
+      obs.x = particle.x + (observation.x * cos(particle.theta)) - (observation.y * sin(particle.theta));
+      obs.y = particle.y + (observation.x * sin(particle.theta)) + (observation.y * cos(particle.theta));
+    
+      //Associate each measurement with the closest landmark identifier
       Map::single_landmark_s closest_lm;
-      double closest_dist = numeric_limits<double>::max();
+
+      double closest_dist = std::numeric_limits<double>::max();
 
       for (int lm; lm < map_landmarks.landmark_list.size(); lm++){
         Map::single_landmark_s map_lm = map_landmarks.landmark_list[lm];
-        double dist_curr = dist(obs.x, obs.y, map_lm.x, map_lm.y);
+        double dist_curr = dist(obs.x, obs.y, map_lm.x_f, map_lm.y_f);
         if (dist_curr < closest_dist) {
           closest_lm = map_lm;
           closest_dist = dist_curr;
         }
       }
 
-      observations_transformed[j].id = closest_lm.id;   
-
-
       //Calculate particle weight values
-      double nominator = exp(-(obs.x-
-
-
+      double nominator = exp(-pow(obs.x - closest_lm.x_f,2)/exp_den_1 + pow(obs.y - closest_lm.y_f,2)/exp_den_2);
+      
+      weight *= nominator/denominator;
     }
-
-
-    }
-
+    particles[i].weight = weight; 
   }
 }
 
