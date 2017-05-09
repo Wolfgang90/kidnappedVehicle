@@ -80,6 +80,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
 
+
 }
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
@@ -95,6 +96,55 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   3.33. Note that you'll need to switch the minus sign in that equation to a plus to account 
 	//   for the fact that the map's y-axis actually points downwards.)
 	//   http://planning.cs.uiuc.edu/node99.html
+  
+  //Precalculate elements of Multivariate-Gaussian-Probability
+  double denominator = 2 * M_PI * std_landmark[0] std_landmark[1];
+  double exp_den_1 = 2 * pow(std_landmark[0],2)
+  double exp_den_2 = 2 * pow(std_landmark[1],2)
+
+  for (int i = 0; i < num_particles; i++) {
+    Particle particle = particles[i];
+    
+    //Transform car measurements from local coordinate system to map coordinate system
+    std::vector<LandmarkObs> observations_transformed;
+    for (int j = 0; j < observations.size(); j++) {
+      LandmarkObs observation = observations[j]
+
+      LandmarkObs obs_transformed;
+      obs_transformed.id = observation.id;
+      obs_transformed.x = particle.x + (observation.x * cos(particle.theta)) - (observation.y * sin(particle.theta));
+      obs_transformed.y = particle.y + (observation.x * sin(particle.theta)) + (observation.y * cos(particle.theta));
+      observations_transformed.push_back(obs_transformed);
+    }
+
+    //Associate each measurement with the closest landmark identifier
+    for (int j = 0; j < observations_transformed.size(); j++){
+      LandmarkObs obs = observations_transformed[j]; 
+      Map::single_landmark_s closest_lm;
+      double closest_dist = numeric_limits<double>::max();
+
+      for (int lm; lm < map_landmarks.landmark_list.size(); lm++){
+        Map::single_landmark_s map_lm = map_landmarks.landmark_list[lm];
+        double dist_curr = dist(obs.x, obs.y, map_lm.x, map_lm.y);
+        if (dist_curr < closest_dist) {
+          closest_lm = map_lm;
+          closest_dist = dist_curr;
+        }
+      }
+
+      observations_transformed[j].id = closest_lm.id;   
+
+
+      //Calculate particle weight values
+      double nominator = exp(-(obs.x-
+
+
+    }
+
+
+    }
+
+  }
 }
 
 void ParticleFilter::resample() {
