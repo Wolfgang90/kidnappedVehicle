@@ -19,7 +19,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
   //set number of particles
-  num_particles = 300;
+  num_particles = 50;
 
   //resize weight vector and set all weights to 1
   weights.resize(num_particles,1.0);
@@ -34,7 +34,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 
   for (int i = 0; i < num_particles; i++) {
 
-    struct Particle particle;
+    Particle particle;
     particle.id = i;
     particle.x = dist_x(gen);
     particle.y = dist_y(gen);
@@ -70,6 +70,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     particle.x += v_yaw * (sin(yaw_dt)-sin(theta_tmp));
     particle.y += v_yaw * (cos(theta_tmp) - cos(yaw_dt));
     particle.theta += yaw_dt;
+    particles[i] = particle;
   }
 
 }
@@ -80,7 +81,21 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
 
+  for(int i = 0; i < observations.size(); i++) {
+    double closest_dist = std::numeric_limits<double>::max();
+    int closest_id;
+    LandmarkObs observation = observations[i];
 
+    for (int j = 0; j < predicted.size(); j++) {
+      double dist_curr = dist(observation.x, observation.y, predicted[j].x, predicted[j].y);
+      if(dist_curr < closest_dist) {
+        closest_dist = dist_curr;
+        closest_id = predicted[j].id;
+      }
+    }
+    
+    observations[i].id = closest_id;
+  }
 }
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
